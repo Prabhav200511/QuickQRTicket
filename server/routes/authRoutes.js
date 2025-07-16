@@ -4,6 +4,10 @@ const bcrypt = require('bcryptjs');
 const pool = require('../db');
 const { createToken, verifyToken } = require('../utils/jwt');
 const { appError } = require('../utils/appError');
+const sendOTP = require('../utils/mailer');
+
+const otpStore = new Map(); // email -> { otp, expiresAt }
+
 
 router.get('/me', async (req, res) => {
   const token = req.cookies?.token;
@@ -130,6 +134,64 @@ router.put('/update-profile', async (req, res, next) => {
   }
 });
 
+router.post('/send-otp', async (req, res, next) => {
+  const token = req.cookies?.token;
+  if (!token) return res.status(401).json({ message: 'Not authenticated' });
+
+  const decoded = verifyToken(token);
+  if (!decoded) return res.status(401).json({ message: 'Invalid token' });
+
+  try {
+    const userResult = await pool.query('SELECT email FROM users WHERE id = $1', [decoded.id]);
+    const user = userResult.rows[0];
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    otpStore.set(user?.email, { otp, expiresAt });
+
+    await sendOTP(user?.email, otp);
+
+    res.json({ message: 'OTP sent to your registered email' });
+  } catch (err) {
+    console.error('Error sending OTP:', err);
+    next(appError('Failed to send OTP email.', 500));
+  }
+});
+
+
+router.post('/change-password', async (req, res, next) => {
+  const token = req.cookies?.token;
+  if (!token) return res.status(401).json({ message: 'Not authenticated' });
+
+  const decoded = verifyToken(token);
+  if (!decoded) return res.status(401).json({ message: 'Invalid token' });
+
+  const { otp, newPassword } = req.body;
+  if (!otp || !newPassword) return next(appError('OTP and new password are required', 400));
+
+  try {
+    const userResult = await pool.query('SELECT email FROM users WHERE id = $1', [decoded.id]);
+    const user = userResult.rows[0];
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const record = otpStore.get(user.email);
+    if (!record || record.otp !== otp || record.expiresAt < Date.now()) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await pool.query('UPDATE users SET password = $1 WHERE id = $2', [hashed, decoded.id]);
+
+    otpStore.delete(user.email); // clear used OTP
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (err) {
+    console.error('Change password error:', err);
+    next(appError('Failed to change password.', 500));
+  }
+});
 
 
 module.exports = router;
