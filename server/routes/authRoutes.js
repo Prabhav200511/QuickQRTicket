@@ -5,8 +5,8 @@ const pool = require('../db');
 const { createToken, verifyToken } = require('../utils/jwt');
 const { appError } = require('../utils/appError');
 const sendOTP = require('../utils/mailer');
+const { generateOtp, hashOtp, compareOtp } = require('../utils/otp');
 
-const otpStore = new Map(); // email -> { otp, expiresAt }
 
 
 router.get('/me', async (req, res) => {
@@ -31,7 +31,7 @@ router.get('/me', async (req, res) => {
 
 
 router.post('/signup', async (req, res, next) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, role } = req.body;
 
   if (!name || !email || !password) {
     return next(appError('All fields are required.', 400));
@@ -43,10 +43,12 @@ router.post('/signup', async (req, res, next) => {
       return next(appError('Email already exists.', 409));
     }
 
-    const hashed = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const userRole = role === 'host' ? 'host' : 'customer';
+
     const result = await pool.query(
       'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role',
-      [name, email, hashed, 'host']
+      [name, email, hashedPassword, userRole]
     );
 
     const user = result.rows[0];
@@ -66,6 +68,7 @@ router.post('/signup', async (req, res, next) => {
   }
 });
 
+// LOGIN
 router.post('/login', async (req, res, next) => {
   const { email, password } = req.body;
 
@@ -90,7 +93,8 @@ router.post('/login', async (req, res, next) => {
       sameSite: 'Lax',
     });
 
-    res.json({ message: 'Login successful', user });
+    const { password: _, ...safeUser } = user;
+    res.json({ message: 'Login successful', user: safeUser });
   } catch (err) {
     console.error('Login error:', err);
     next(appError('Internal error during login.', 500));
@@ -146,14 +150,18 @@ router.post('/send-otp', async (req, res, next) => {
     const user = userResult.rows[0];
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+    const otp = generateOtp();          
+    const hashedOtp = await hashOtp(otp);
+    const expires = new Date(Date.now() + 5 * 60 * 1000); 
 
-    otpStore.set(user?.email, { otp, expiresAt });
+    await pool.query(
+      'UPDATE users SET otp_hash = $1, otp_expires = $2 WHERE email = $3',
+      [hashedOtp, expires, user.email]
+    );
 
-    await sendOTP(user?.email, otp);
+    await sendOTP(user.email, otp);
 
-    res.json({ message: 'OTP sent to your registered email' });
+    res.status(200).json({ message: 'OTP sent to your registered email' });
   } catch (err) {
     console.error('Error sending OTP:', err);
     next(appError('Failed to send OTP email.', 500));
@@ -169,22 +177,31 @@ router.post('/change-password', async (req, res, next) => {
   if (!decoded) return res.status(401).json({ message: 'Invalid token' });
 
   const { otp, newPassword } = req.body;
-  if (!otp || !newPassword) return next(appError('OTP and new password are required', 400));
+  if (!otp || !newPassword)
+    return next(appError('OTP and new password are required', 400));
 
   try {
-    const userResult = await pool.query('SELECT email FROM users WHERE id = $1', [decoded.id]);
+    const userResult = await pool.query(
+      'SELECT email, otp_hash, otp_expires FROM users WHERE id = $1',
+      [decoded.id]
+    );
     const user = userResult.rows[0];
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const record = otpStore.get(user.email);
-    if (!record || record.otp !== otp || record.expiresAt < Date.now()) {
-      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    if (!user.otp_expires || new Date(user.otp_expires) < new Date()) {
+      return res.status(400).json({ message: 'OTP has expired' });
+    }
+
+    const isValidOtp = await compareOtp(otp, user.otp_hash);
+    if (!isValidOtp) {
+      return res.status(400).json({ message: 'Invalid OTP' });
     }
 
     const hashed = await bcrypt.hash(newPassword, 10);
-    await pool.query('UPDATE users SET password = $1 WHERE id = $2', [hashed, decoded.id]);
-
-    otpStore.delete(user.email); // clear used OTP
+    await pool.query(
+      'UPDATE users SET password = $1, otp_hash = NULL, otp_expires = NULL WHERE id = $2',
+      [hashed, decoded.id]
+    );
 
     res.json({ message: 'Password updated successfully' });
   } catch (err) {
@@ -192,6 +209,29 @@ router.post('/change-password', async (req, res, next) => {
     next(appError('Failed to change password.', 500));
   }
 });
+
+router.delete('/delete-account', async (req, res, next) => {
+  const token = req.cookies?.token;
+  if (!token) return res.status(401).json({ message: 'Not authenticated' });
+
+  const decoded = verifyToken(token);
+  if (!decoded) return res.status(401).json({ message: 'Invalid token' });
+
+  try {
+    await pool.query('DELETE FROM users WHERE id = $1', [decoded.id]);
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'Lax',
+    });
+
+    res.json({ message: 'Account deleted successfully' });
+  } catch (err) {
+    console.error('Delete account error:', err);
+    next(appError('Failed to delete account.', 500));
+  }
+});
+
 
 
 module.exports = router;

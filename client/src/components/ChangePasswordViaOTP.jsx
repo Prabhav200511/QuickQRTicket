@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 const ChangePasswordViaOTP = () => {
   const [otpSent, setOtpSent] = useState(false);
@@ -12,10 +13,10 @@ const ChangePasswordViaOTP = () => {
       setLoading(true);
       await axios.post('/api/auth/send-otp');
       setOtpSent(true);
-      alert('OTP sent to your registered email.');
+      toast.success('OTP sent to your registered email.');
     } catch (err) {
       console.error('Error sending OTP:', err);
-      alert('Failed to send OTP. Please try again.');
+      toast.error('Failed to send OTP. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -24,19 +25,20 @@ const ChangePasswordViaOTP = () => {
   const handleChangePassword = async (e) => {
     e.preventDefault();
     if (!otp || !newPassword) {
-      return alert('Please fill both OTP and new password.');
+      toast.error('Please fill both OTP and new password.');
+      return;
     }
 
     try {
       setLoading(true);
       await axios.post('/api/auth/change-password', { otp, newPassword });
-      alert('Password changed successfully!');
+      toast.success('Password changed successfully!');
       setOtp('');
       setNewPassword('');
       setOtpSent(false);
     } catch (err) {
       console.error('Change password error:', err);
-      alert(err?.response?.data?.message || 'Failed to change password.');
+      toast.error(err?.response?.data?.message || 'Failed to change password.');
     } finally {
       setLoading(false);
     }
@@ -44,7 +46,7 @@ const ChangePasswordViaOTP = () => {
 
   return (
     <div className="mt-6 p-6 border rounded-xl bg-base-100 shadow-md">
-      <h3 className="text-lg font-bold mb-4">🔐 Change Password via OTP</h3>
+      <h3 className="text-lg font-bold mb-4">🔐 Change Password</h3>
 
       {!otpSent && (
         <button

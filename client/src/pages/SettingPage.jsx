@@ -2,11 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import ChangePasswordViaOTP from '../components/ChangePasswordViaOTP';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import ThemeToggle from '../components/ThemeToggle';
 
 const SettingsPage = () => {
-  const { user, login } = useAuth();
+  const { user, login, logout } = useAuth();
   const [name, setName] = useState(user?.name || '');
   const [loading, setLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (user?.name) setName(user.name);
@@ -14,19 +19,58 @@ const SettingsPage = () => {
 
   const handleUpdateName = async (e) => {
     e.preventDefault();
-    if (!name.trim()) return alert('Name cannot be empty.');
+    if (!name.trim()) {
+      toast.error('Name cannot be empty.');
+      return;
+    }
 
     try {
       setLoading(true);
       const res = await axios.put('/api/auth/update-profile', { name });
-      login(res.data.user); // Update global auth context
-      alert('Profile name updated successfully.');
+      login(res.data.user);
+      toast.success('Profile name updated successfully.');
     } catch (err) {
       console.error('Update name error:', err);
-      alert('Failed to update name.');
+      toast.error('Failed to update name.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDeleteAccount = async () => {
+    toast(
+      (t) => (
+        <div className="text-sm">
+          <p className="font-medium">Are you sure?</p>
+          <div className="mt-2 flex gap-2 justify-end">
+            <button
+              onClick={async () => {
+                toast.dismiss(t.id);
+                try {
+                  setDeleteLoading(true);
+                  await axios.delete('/api/auth/delete-account');
+                  logout();
+                  toast.success('Account deleted.');
+                  navigate('/signup');
+                } catch (err) {
+                  console.error('Delete account error:', err);
+                  toast.error('Failed to delete account.');
+                } finally {
+                  setDeleteLoading(false);
+                }
+              }}
+              className="btn btn-sm btn-error btn-outline"
+            >
+              Yes, Delete
+            </button>
+            <button onClick={() => toast.dismiss(t.id)} className="btn btn-sm">
+              Cancel
+            </button>
+          </div>
+        </div>
+      ),
+      { duration: 10000 }
+    );
   };
 
   if (!user) {
@@ -41,7 +85,9 @@ const SettingsPage = () => {
     <div className="max-w-xl mx-auto p-6 mt-8 bg-base-100 shadow-xl rounded-xl">
       <h1 className="text-2xl font-bold mb-6 text-center">⚙️ Account Settings</h1>
 
-      {/* 1. View and edit name */}
+      <ThemeToggle />
+
+      {/* 1. Edit profile name */}
       <form onSubmit={handleUpdateName} className="space-y-4">
         <div>
           <label className="label font-semibold">Name</label>
@@ -71,8 +117,21 @@ const SettingsPage = () => {
         </button>
       </form>
 
-      {/* 2. Password change via OTP */}
-      <ChangePasswordViaOTP />
+      {/* 2. Change password via OTP */}
+      <div className="mt-8">
+        <ChangePasswordViaOTP />
+      </div>
+
+      {/* 3. Delete Account */}
+      <div className="mt-8 text-center">
+        <button
+          onClick={handleDeleteAccount}
+          className={`btn btn-error btn-outline w-full ${deleteLoading ? 'btn-disabled' : ''}`}
+        >
+          {deleteLoading ? 'Deleting...' : 'Delete Account'}
+        </button>
+        <p className="text-xs text-gray-500 mt-2">Warning: This action is permanent.</p>
+      </div>
     </div>
   );
 };
