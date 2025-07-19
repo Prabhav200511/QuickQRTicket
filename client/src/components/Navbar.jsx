@@ -30,7 +30,7 @@ const Navbar = () => {
         <Link to="/" className="text-xl font-bold text-primary">QuickTicket</Link>
       </div>
 
-      <div className="flex-none gap-2">
+      <div className="flex-none gap-2 items-center">
         {/* Theme toggle */}
         <label className="swap swap-rotate ml-2">
           <input type="checkbox" className="theme-controller" value="dark" />
@@ -38,19 +38,46 @@ const Navbar = () => {
           <svg className="swap-off fill-current w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M6.05 17.95l-1.414 1.414M18.364 18.364l-1.414-1.414M6.05 6.05L4.636 7.464" /></svg>
         </label>
 
-        {/* User controls */}
+        {/* Customer links */}
+        {user && user.role === 'customer' && (
+          <>
+            <Link to="/events" className="btn btn-ghost mx-1">
+              Browse Events
+            </Link>
+            <Link to="/my-tickets" className="btn btn-ghost mx-1">
+              My Tickets
+            </Link>
+          </>
+        )}
+
+        {/* Host links */}
+        {user && user.role === 'host' && (
+          <Link to="/host/scan" className="btn btn-ghost mx-1">
+            Scan Ticket
+          </Link>
+        )}
+
+        {/* Authenticated user controls */}
         {user ? (
           <>
             <button className="btn btn-sm btn-outline ml-2" onClick={goToDashboard}>
               Dashboard
             </button>
-            <Link to="/settings" className="btn btn-sm btn-outline ml-2">Settings</Link>
-            <button onClick={handleLogout} className="btn btn-sm btn-error text-white ml-2">Logout</button>
+            <Link to="/settings" className="btn btn-sm btn-outline ml-2">
+              Settings
+            </Link>
+            <button onClick={handleLogout} className="btn btn-sm btn-error text-white ml-2">
+              Logout
+            </button>
           </>
         ) : (
           <>
-            <Link to="/login" className="btn btn-sm btn-primary ml-2">Login</Link>
-            <Link to="/signup" className="btn btn-sm btn-outline ml-2">Signup</Link>
+            <Link to="/login" className="btn btn-sm btn-primary ml-2">
+              Login
+            </Link>
+            <Link to="/signup" className="btn btn-sm btn-outline ml-2">
+              Signup
+            </Link>
           </>
         )}
       </div>
