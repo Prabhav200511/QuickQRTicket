@@ -37,14 +37,46 @@ router.post('/create', protectRoute, authorizeRole('host'), async (req, res) => 
   }
 });
 
+// For all event-fetching routes:
 router.get('/all', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM events ORDER BY time ASC');
+    const now = new Date();
+    await pool.query('DELETE FROM events WHERE end_time < $1', [now]);
+
+    const result = await pool.query(`
+      SELECT 
+        e.*,
+        e.capacity - COALESCE(t.sold, 0) as availabletickets
+      FROM events e
+      LEFT JOIN (
+        SELECT event_id, COUNT(*) as sold
+        FROM tickets
+        GROUP BY event_id
+      ) t ON e.id = t.event_id
+      ORDER BY e.time ASC
+    `);
+
     res.status(200).json({ events: result.rows });
   } catch (err) {
     console.error('Error fetching events:', err);
     res.status(500).json({ message: 'Error fetching events' });
   }
 });
+
+router.get('/host', protectRoute, authorizeRole('host'), async (req, res) => {
+  const hostId = req.user.id;
+  try {
+    // Optionally, add ticket availability here if you wish
+    const result = await pool.query(
+      'SELECT * FROM events WHERE host_id = $1 ORDER BY time ASC',
+      [hostId]
+    );
+    res.json({ events: result.rows });
+  } catch (err) {
+    console.error('Error fetching host events:', err);
+    res.status(500).json({ message: 'Error fetching your events' });
+  }
+});
+
 
 module.exports = router;

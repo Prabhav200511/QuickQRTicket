@@ -14,6 +14,7 @@ import ViewEventsPage from './pages/ViewEventsPage.jsx';
 import PaymentsPage from './pages/PaymentsPage.jsx';
 import MyTicketsPage from './pages/MyTicketsPage';
 import ScanTicketPage from './pages/ScanTicketPage.jsx';
+import HostEventsPage from './pages/HostEventsPage.jsx';
 
 
 const App = () => {
@@ -35,6 +36,7 @@ const App = () => {
         <Route path="/pay/:eventId" element={<PaymentsPage />} />
         <Route path="/my-tickets" element={<MyTicketsPage />} />
         <Route path="/host/scan" element={<ScanTicketPage />} />
+        <Route path="/dashboard/host/events" element={<HostEventsPage />} />
       </Routes>
     </div>
   );

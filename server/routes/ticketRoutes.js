@@ -107,46 +107,54 @@ router.post('/buy', protectRoute, authorizeRole('customer'), async (req, res) =>
   const customerId = req.user.id;
 
   try {
-    // 1. Get event details
-    const eventRes = await pool.query('SELECT * FROM events WHERE id = $1', [eventId]);
-    const event = eventRes.rows[0];
-    if (!event) return res.status(404).json({ message: 'Event not found' });
+    await pool.query('BEGIN');
 
-    // 2. Event not started?
+    // Lock event row for update to prevent race
+    const eventRes = await pool.query('SELECT * FROM events WHERE id = $1 FOR UPDATE', [eventId]);
+    const event = eventRes.rows[0];
+    if (!event) {
+      await pool.query('ROLLBACK');
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
     if (new Date(event.time) <= new Date()) {
+      await pool.query('ROLLBACK');
       return res.status(400).json({ message: 'Event already started' });
     }
 
-    // 3. Check ticket availability
+    // Count sold tickets within same transaction to ensure correctness
     const ticketCount = await pool.query(
       'SELECT COUNT(*) FROM tickets WHERE event_id = $1',
       [eventId]
     );
     if (+ticketCount.rows[0].count >= event.capacity) {
+      await pool.query('ROLLBACK');
       return res.status(400).json({ message: 'Event is full' });
     }
 
-    // 4. Prevent duplicate purchase
+    // Check duplicate purchase
     const existing = await pool.query(
       'SELECT * FROM tickets WHERE event_id = $1 AND customer_id = $2',
       [eventId, customerId]
     );
     if (existing.rows.length > 0) {
+      await pool.query('ROLLBACK');
       return res.status(400).json({ message: 'Ticket already booked' });
     }
 
-    // 5. Generate random QR data
+    // Insert new ticket
     const qrData = `TICKET|${eventId}|${customerId}|${Math.random().toString(36).substring(2, 10)}|${Date.now()}`;
     const qrCode = await QRCode.toDataURL(qrData);
 
-    // 6. Insert ticket
     const insertRes = await pool.query(
       'INSERT INTO tickets (event_id, customer_id, qr_code) VALUES ($1, $2, $3) RETURNING *',
       [eventId, customerId, qrCode]
     );
 
+    await pool.query('COMMIT');
     res.status(201).json({ message: 'Ticket purchased', ticket: insertRes.rows[0] });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error('Ticket purchase error:', err);
     res.status(500).json({ message: 'Failed to purchase ticket' });
   }

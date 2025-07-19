@@ -1,18 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import toast from 'react-hot-toast';
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 const ViewEventsPage = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/events/all');
+        const res = await axios.get("http://localhost:5000/api/events/all");
         setEvents(res.data.events);
       } catch (err) {
-        toast.error('Failed to load events');
+        toast.error("Failed to load events");
       } finally {
         setLoading(false);
       }
@@ -20,21 +22,12 @@ const ViewEventsPage = () => {
     fetchEvents();
   }, []);
 
-  const handleBuy = async (eventId) => {
-  try {
-    const res = await axios.post(
-      'http://localhost:5000/api/tickets/buy',
-      { eventId },
-      { withCredentials: true }
-    );
-    toast.success('Ticket booked!');
-    const newWindow = window.open();
-    newWindow.document.write(`<img src="${res.data.ticket.qr_code}" />`);
-  } catch (err) {
-    toast.error(err?.response?.data?.message || 'Purchase failed');
-  }
-};
+  const handleGoToPay = (eventId) => {
+    navigate(`/pay/${eventId}`);
+  };
 
+  // Helper: is event started?
+  const isStarted = (event) => new Date(event.time) <= new Date();
 
   return (
     <div className="p-6">
@@ -47,22 +40,44 @@ const ViewEventsPage = () => {
         <p className="text-center text-gray-500">No events available.</p>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {events.map((event) => (
-            <div key={event.id} className="bg-base-100 p-6 rounded shadow-md">
-              <h3 className="text-xl font-semibold mb-2">{event.name}</h3>
-              <p className="text-sm text-gray-500 mb-1">
-                Time: {new Date(event.time).toLocaleString()}
-              </p>
-              <p>Capacity: {event.capacity}</p>
-              <p>Price: ₹{event.price}</p>
-              <button
-                onClick={() => handleBuy(event.id)}
-                className="btn btn-primary btn-sm mt-4 w-full"
-              >
-                Buy Ticket
-              </button>
-            </div>
-          ))}
+          {events.map((event) => {
+            const started = isStarted(event);
+            return (
+              <div key={event.id} className="bg-base-100 p-6 rounded shadow-md flex flex-col justify-between">
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">{event.name}</h3>
+                  <p className="text-sm text-gray-500 mb-1">
+                    Time: {new Date(event.time).toLocaleString()}
+                  </p>
+                  <p>
+                    Capacity: {event.capacity}
+                  </p>
+                  <p>
+                    Tickets Left: {event.availabletickets}
+                  </p>
+                  <p>
+                    Price: ₹{event.price}
+                  </p>
+                  {event.description && (
+                    <p className="text-gray-700 mt-2">{event.description}</p>
+                  )}
+                </div>
+                <button
+                  disabled={started || event.availabletickets <= 0}
+                  onClick={() => handleGoToPay(event.id)}
+                  className={`btn btn-primary btn-sm mt-4 w-full
+                    ${started || event.availabletickets <= 0 ? "btn-disabled bg-gray-400 border-gray-400 cursor-not-allowed" : ""}
+                  `}
+                >
+                  {started
+                    ? "Event Started"
+                    : event.availabletickets > 0
+                    ? "Buy Ticket"
+                    : "Sold Out"}
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
