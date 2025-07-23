@@ -9,9 +9,8 @@ const HostEventsPage = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        // Adjust this endpoint if your backend route is different!
         const res = await axios.get('http://localhost:5000/api/events/host', { withCredentials: true });
-        setEvents(res.data.events); // expects: { events: [...] }
+        setEvents(res.data.events); 
       } catch (err) {
         toast.error('Failed to load your events');
       } finally {
@@ -36,12 +35,16 @@ const HostEventsPage = () => {
             <div key={event.id} className="bg-base-100 p-6 rounded shadow-md">
               <h3 className="text-xl font-semibold mb-2">{event.name}</h3>
               <p className="text-sm text-gray-500 mb-1">
-                Time: {new Date(event.time).toLocaleString()}
+                Start: {event.time ? new Date(event.time).toLocaleString() : "-"}
+              </p>
+              <p className="text-sm text-gray-500 mb-1">
+                End: {event.end_time ? new Date(event.end_time).toLocaleString() : "-"}
               </p>
               <p>Capacity: {event.capacity}</p>
               <p>Price: ₹{event.price}</p>
-              {event.description && <p className="text-gray-700 mt-2">{event.description}</p>}
-              {/* Add status here if you want (e.g. tickets left, started/ended, etc.) */}
+              {event.description && (
+                <p className="text-gray-700 mt-2">{event.description}</p>
+              )}
             </div>
           ))}
         </div>

@@ -47,31 +47,30 @@ const ViewEventsPage = () => {
                 <div>
                   <h3 className="text-xl font-semibold mb-2">{event.name}</h3>
                   <p className="text-sm text-gray-500 mb-1">
-                    Time: {new Date(event.time).toLocaleString()}
+                    Start: {new Date(event.time).toLocaleString()}
                   </p>
-                  <p>
-                    Capacity: {event.capacity}
+                  <p className="text-sm text-gray-500 mb-1">
+                    End: {event.end_time ? new Date(event.end_time).toLocaleString() : "TBA"}
                   </p>
-                  <p>
-                    Tickets Left: {event.availabletickets}
-                  </p>
-                  <p>
-                    Price: ₹{event.price}
-                  </p>
+                  <p>Capacity: {event.capacity}</p>
+                  <p>Tickets Left: {event.availabletickets || 0}</p>
+                  <p>Price: ₹{event.price}</p>
                   {event.description && (
                     <p className="text-gray-700 mt-2">{event.description}</p>
                   )}
                 </div>
                 <button
-                  disabled={started || event.availabletickets <= 0}
+                  disabled={started || (event.availabletickets || 0) <= 0}
                   onClick={() => handleGoToPay(event.id)}
-                  className={`btn btn-primary btn-sm mt-4 w-full
-                    ${started || event.availabletickets <= 0 ? "btn-disabled bg-gray-400 border-gray-400 cursor-not-allowed" : ""}
-                  `}
+                  className={`btn btn-primary btn-sm mt-4 w-full${
+                    started || (event.availabletickets || 0) <= 0
+                      ? " btn-disabled bg-gray-400 border-gray-400 cursor-not-allowed"
+                      : ""
+                  }`}
                 >
                   {started
                     ? "Event Started"
-                    : event.availabletickets > 0
+                    : (event.availabletickets || 0) > 0
                     ? "Buy Ticket"
                     : "Sold Out"}
                 </button>

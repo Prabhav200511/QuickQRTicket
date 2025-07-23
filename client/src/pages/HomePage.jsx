@@ -1,8 +1,11 @@
 import React from "react";
 import { TicketCheck, Users, CalendarPlus } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext"; // Make sure this path is correct
 
 const HomePage = () => {
+  const { user } = useAuth();
+
   return (
     <div className="min-h-screen flex flex-col justify-center animate-fade-in">
       {/* Hero Section */}
@@ -16,9 +19,18 @@ const HomePage = () => {
             Host events, sell tickets, and enjoy instant QR entry in a modern, secure, and beautiful experience—built for both organizers and attendees.
           </p>
           <div className="flex flex-col md:flex-row gap-4 justify-center mb-6">
-            <Link to="/events" className="btn btn-primary btn-lg rounded-full shadow-md">
-              Browse Events
-            </Link>
+            {/* Only non-hosts see events link */}
+            {(!user || user.role === "customer") && (
+              <Link to="/events" className="btn btn-primary btn-lg rounded-full shadow-md">
+                Discover Events
+              </Link>
+            )}
+            {/* Only hosts see dashboard link */}
+            {user && user.role === "host" && (
+              <Link to="/dashboard/host" className="btn btn-primary btn-lg rounded-full shadow-md">
+                Go to Dashboard
+              </Link>
+            )}
             <Link to="/signup" className="btn btn-accent btn-lg rounded-full shadow-md">
               Get Started
             </Link>
@@ -70,9 +82,18 @@ const HomePage = () => {
             <Link to="/signup" className="btn btn-primary btn-lg rounded-full shadow-lg mr-3">
               Join QuickTicket
             </Link>
-            <Link to="/events" className="btn btn-outline btn-lg rounded-full">
-              Explore Events
-            </Link>
+            {/* Same: Only show events link to customer/guest */}
+            {(!user || user.role === "customer") && (
+              <Link to="/events" className="btn btn-outline btn-lg rounded-full">
+                Discover Events
+              </Link>
+            )}
+            {/* Host sees dashboard button */}
+            {user && user.role === "host" && (
+              <Link to="/dashboard/host" className="btn btn-outline btn-lg rounded-full">
+                Go to Dashboard
+              </Link>
+            )}
           </div>
         </div>
       </section>

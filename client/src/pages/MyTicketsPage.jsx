@@ -1,49 +1,57 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import toast from 'react-hot-toast';
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import toast from "react-hot-toast";
 
 const MyTicketsPage = () => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    (async () => {
+    const fetchTickets = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/tickets/my-tickets', { withCredentials: true });
+        const res = await axios.get("http://localhost:5000/api/tickets/my-tickets", { withCredentials: true });
         setTickets(res.data.tickets);
-      } catch {
-        toast.error('Failed to load tickets');
+      } catch (err) {
+        toast.error("Failed to load tickets");
       } finally {
         setLoading(false);
       }
-    })();
+    };
+    fetchTickets();
   }, []);
 
+  // Helper to show a safe, readable date (or TBA)
+  const safeFormat = (dt) =>
+    dt && !isNaN(new Date(dt)) ? new Date(dt).toLocaleString() : "TBA";
+
   return (
-    <div className="max-w-3xl mx-auto my-8 p-4">
-      <h2 className="text-2xl font-bold text-center mb-6">My Active Tickets</h2>
+    <div className="p-6">
+      <h2 className="text-2xl font-bold mb-6 text-center">My Tickets</h2>
       {loading ? (
-        <div className="flex justify-center items-center h-40">Loading...</div>
+        <div className="flex justify-center items-center h-48">
+          <span className="loading loading-spinner loading-lg"></span>
+        </div>
       ) : tickets.length === 0 ? (
-        <p className="text-center text-gray-500 mt-10">No active tickets found.</p>
+        <p className="text-center text-gray-500">No tickets booked yet.</p>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {tickets.map(ticket => (
-            <div key={ticket.ticket_id} className="shadow rounded p-6 bg-base-100 text-center">
+            <div key={ticket.ticket_id} className="bg-base-100 p-6 rounded shadow-md flex flex-col items-center">
               <h3 className="text-lg font-semibold mb-2">{ticket.event_name}</h3>
-              <p className="mb-2 text-gray-500">
-                Event Time: {new Date(ticket.event_time).toLocaleString()}
+              <p className="text-sm text-gray-500 mb-1">
+                Start: {safeFormat(ticket.event_time)}
+              </p>
+              <p className="text-sm text-gray-500 mb-1">
+                End: {safeFormat(ticket.event_end_time)}
               </p>
               <img
                 src={ticket.qr_code}
-                alt={`QR for ${ticket.event_name}`}
-                className="mx-auto my-2"
-                style={{ maxWidth: 180 }}
+                alt="QR Code"
+                className="mt-2 mb-2"
+                style={{ width: 100, height: 100 }}
               />
-              <div>
-                <span className={`badge ${ticket.scanned ? 'badge-error' : 'badge-success'} mt-2`}>
-                  {ticket.scanned ? 'Scanned/Used' : 'Active'}
-                </span>
+              <div className={`mt-2 badge ${ticket.scanned ? "badge-success" : "badge-warning"}`}>
+                {ticket.scanned ? "Used" : "Not Used"}
               </div>
             </div>
           ))}
