@@ -47,8 +47,7 @@ router.post(
     if (!req.file) return res.status(400).json({ message: "Image required." });
 
     try {
-      const image = await Jimp.read(req.file.buffer);
-
+      const image = await (Jimp.read ? Jimp.read(req.file.buffer) : Jimp.default.read(req.file.buffer));
       let qrResult;
       try {
         qrResult = await decodeQR(image);
@@ -171,7 +170,8 @@ router.get('/my-tickets', protectRoute, authorizeRole('customer'), async (req, r
         tickets.qr_code,
         tickets.scanned,
         events.name as event_name,
-        events.time as event_time
+        events.time as event_time,
+        events.end_time as event_end_time
       FROM tickets
       JOIN events ON tickets.event_id = events.id
       WHERE tickets.customer_id = $1
@@ -185,5 +185,187 @@ router.get('/my-tickets', protectRoute, authorizeRole('customer'), async (req, r
     res.status(500).json({ message: 'Failed to fetch tickets' });
   }
 });
+
+router.post(
+  '/scan-qrstring',
+  protectRoute,
+  authorizeRole('host'),
+  async (req, res) => {
+    try {
+      const { qrText } = req.body;
+      console.log("QR scan attempt:", { qrText: qrText ? "received" : "missing" });
+      
+      if (!qrText) {
+        return res.status(400).json({ message: "QR text required." });
+      }
+
+      // Parse QR string
+      const [prefix, eventId, customerId] = qrText.split('|');
+      if (prefix !== 'TICKET' || !eventId || !customerId) {
+        console.log("Invalid QR format:", { prefix, eventId, customerId });
+        return res.status(400).json({ message: "QR format invalid." });
+      }
+
+      console.log("Scanning ticket:", { eventId, customerId });
+
+      // Start database transaction for atomicity
+      await pool.query('BEGIN');
+
+      try {
+        // Query ticket + event with explicit timezone handling
+        const ticketRes = await pool.query(
+          `SELECT t.*, 
+                  e.time as event_time, 
+                  e.end_time, 
+                  e.name as event_name,
+                  NOW() as server_time
+          FROM tickets t 
+          JOIN events e ON t.event_id = e.id
+          WHERE t.event_id = $1 AND t.customer_id = $2`,
+          [eventId, customerId]
+        );
+
+        
+        const ticket = ticketRes.rows[0];
+        if (!ticket) {
+          await pool.query('ROLLBACK');
+          console.log("Ticket not found:", { eventId, customerId });
+          return res.status(404).json({ message: "Ticket not found." });
+        }
+
+        // Normalize all times to UTC for consistent comparison
+        const now = new Date();
+        const eventStartTime = ticket.event_time ? new Date(ticket.event_time) : null;
+        const eventEndTime = ticket.end_time ? new Date(ticket.end_time) : null;
+        const serverTime = ticket.server_time ? new Date(ticket.server_time) : now;
+
+        // Comprehensive debugging
+        console.log("=== TICKET SCAN DEBUG ===");
+        console.log("Current server time:", now.toISOString());
+        console.log("DB server time:", serverTime.toISOString());
+        console.log("Event start time:", eventStartTime?.toISOString() || "null");
+        console.log("Event end time:", eventEndTime?.toISOString() || "null");
+        console.log("Ticket scanned:", ticket.scanned);
+        
+        if (eventStartTime) {
+          console.log("Time until event start (minutes):", (eventStartTime - now) / (1000 * 60));
+        }
+        if (eventEndTime) {
+          console.log("Time since event end (minutes):", (now - eventEndTime) / (1000 * 60));
+        }
+        console.log("========================");
+
+        // Check if already scanned
+        if (ticket.scanned) {
+          await pool.query('ROLLBACK');
+          console.log("Ticket already used:", ticket.id);
+          return res.status(400).json({ 
+            message: "Ticket already used.",
+            scannedAt: ticket.updated_at || "Unknown"
+          });
+        }
+
+        // Check if event has expired (more permissive - allow some buffer)
+        if (eventEndTime && now > eventEndTime) {
+          // Mark as scanned even if expired to prevent reuse
+          await pool.query(
+            "UPDATE tickets SET scanned = true, updated_at = NOW() WHERE id = $1", 
+            [ticket.id]
+          );
+          await pool.query('COMMIT');
+          
+          console.log("Ticket expired:", {
+            ticketId: ticket.id,
+            eventEndTime: eventEndTime.toISOString(),
+            currentTime: now.toISOString()
+          });
+          
+          return res.status(400).json({ 
+            message: "Ticket has expired.",
+            eventEndTime: eventEndTime.toLocaleString(),
+            currentTime: now.toLocaleString()
+          });
+        }
+
+        // Check if event has started (with 30-minute buffer before start time)
+        const bufferMinutes = 30;
+        const eventStartWithBuffer = eventStartTime ? 
+          new Date(eventStartTime.getTime() - (bufferMinutes * 60 * 1000)) : null;
+
+        if (eventStartTime && now < eventStartWithBuffer) {
+          await pool.query('ROLLBACK');
+          
+          console.log("Event not started yet:", {
+            ticketId: ticket.id,
+            eventStartTime: eventStartTime.toISOString(),
+            eventStartWithBuffer: eventStartWithBuffer.toISOString(),
+            currentTime: now.toISOString(),
+            minutesUntilStart: (eventStartTime - now) / (1000 * 60)
+          });
+          
+          return res.status(400).json({ 
+            message: `Event has not started yet. Entry opens ${bufferMinutes} minutes before start time.`,
+            eventStartTime: eventStartTime.toLocaleString(),
+            currentTime: now.toLocaleString(),
+            minutesUntilEntry: Math.ceil((eventStartWithBuffer - now) / (1000 * 60))
+          });
+        }
+
+        // All validations passed - mark ticket as scanned
+        const updateResult = await pool.query(
+          `UPDATE tickets 
+           SET scanned = true, updated_at = NOW() 
+           WHERE id = $1 AND scanned = false
+           RETURNING *`,
+          [ticket.id]
+        );
+
+        // Double-check that update was successful (prevents race conditions)
+        if (updateResult.rowCount === 0) {
+          await pool.query('ROLLBACK');
+          console.log("Ticket already scanned by another process:", ticket.id);
+          return res.status(400).json({ 
+            message: "Ticket was already scanned by another process." 
+          });
+        }
+
+        await pool.query('COMMIT');
+        
+        console.log("✅ Ticket successfully scanned:", {
+          ticketId: ticket.id,
+          eventName: ticket.event_name,
+          customerId: ticket.customer_id,
+          scannedAt: now.toISOString()
+        });
+
+        res.json({
+          message: "Entry validated—welcome!",
+          event_name: ticket.event_name || "(unnamed event)",
+          ticket_id: ticket.id,
+          entry_time: now.toLocaleString(),
+          event_start: eventStartTime ? eventStartTime.toLocaleString() : null
+        });
+
+      } catch (dbError) {
+        await pool.query('ROLLBACK');
+        throw dbError; // Re-throw to be caught by outer catch
+      }
+
+    } catch (error) {
+      console.error("QR scan error (qrstring):", {
+        error: error.message,
+        stack: error.stack,
+        qrText: req.body.qrText ? "provided" : "missing"
+      });
+      
+      res.status(500).json({ 
+        message: "Failed to process QR text",
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+);
+
+
 
 module.exports = router;
