@@ -2,16 +2,23 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+
 const MyTicketsPage = () => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchTickets = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/tickets/my-tickets", { withCredentials: true });
+        const res = await axios.get(`${API_BASE_URL}/api/tickets/my-tickets`, {
+          withCredentials: true,
+        });
         setTickets(res.data.tickets);
+        setError(null);
       } catch (err) {
+        setError("Failed to load tickets");
         toast.error("Failed to load tickets");
       } finally {
         setLoading(false);
@@ -20,7 +27,6 @@ const MyTicketsPage = () => {
     fetchTickets();
   }, []);
 
-  // Helper to show a safe, readable date (or TBA)
   const safeFormat = (dt) =>
     dt && !isNaN(new Date(dt)) ? new Date(dt).toLocaleString() : "TBA";
 
@@ -31,12 +37,17 @@ const MyTicketsPage = () => {
         <div className="flex justify-center items-center h-48">
           <span className="loading loading-spinner loading-lg"></span>
         </div>
+      ) : error ? (
+        <p className="text-center text-red-600">{error}</p>
       ) : tickets.length === 0 ? (
         <p className="text-center text-gray-500">No tickets booked yet.</p>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {tickets.map(ticket => (
-            <div key={ticket.ticket_id} className="bg-base-100 p-6 rounded shadow-md flex flex-col items-center">
+          {tickets.map((ticket) => (
+            <div
+              key={ticket.ticket_id}
+              className="bg-base-100 p-6 rounded shadow-md flex flex-col items-center"
+            >
               <h3 className="text-lg font-semibold mb-2">{ticket.event_name}</h3>
               <p className="text-sm text-gray-500 mb-1">
                 Start: {safeFormat(ticket.event_time)}
@@ -46,11 +57,16 @@ const MyTicketsPage = () => {
               </p>
               <img
                 src={ticket.qr_code}
-                alt="QR Code"
+                alt={`QR Code for ${ticket.event_name}`}
                 className="mt-2 mb-2"
                 style={{ width: 100, height: 100 }}
               />
-              <div className={`mt-2 badge ${ticket.scanned ? "badge-success" : "badge-warning"}`}>
+              <div
+                className={`mt-2 badge ${
+                  ticket.scanned ? "badge-success" : "badge-warning"
+                }`}
+                aria-label={ticket.scanned ? "Ticket Used" : "Ticket Not Used"}
+              >
                 {ticket.scanned ? "Used" : "Not Used"}
               </div>
             </div>

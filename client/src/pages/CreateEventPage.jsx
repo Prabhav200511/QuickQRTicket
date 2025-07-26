@@ -8,20 +8,25 @@ const CreateEventPage = () => {
     name: '',
     description: '',
     time: '',
-    end_time: '',  // new!
+    end_time: '',
     capacity: '',
     price: '',
   });
 
   const navigate = useNavigate();
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
-  // Keep end_time always at least as late as start time
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // Optionally, auto-correct end_time if it's before time
-    if (name === "time" && form.end_time && value > form.end_time) {
-      setForm({ ...form, time: value, end_time: value });
+    if (name === 'time') {
+      const newStart = new Date(value);
+      const currentEnd = new Date(form.end_time);
+      if (form.end_time && newStart >= currentEnd) {
+        setForm({ ...form, time: value, end_time: value });
+      } else {
+        setForm({ ...form, time: value });
+      }
     } else {
       setForm({ ...form, [name]: value });
     }
@@ -30,16 +35,38 @@ const CreateEventPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Basic frontend overflow protection
-    if (form.end_time <= form.time) {
+    const start = new Date(form.time);
+    const end = new Date(form.end_time);
+    const now = new Date();
+
+    if (end <= start) {
       toast.error('End time must be after start time!');
+      return;
+    }
+
+    if (start <= now) {
+      toast.error('Start time must be in the future!');
+      return;
+    }
+
+    if (Number(form.capacity) < 1) {
+      toast.error('Capacity must be at least 1');
+      return;
+    }
+
+    if (Number(form.price) < 0) {
+      toast.error('Price cannot be negative');
       return;
     }
 
     try {
       await axios.post(
-        'http://localhost:5000/api/events/create',
-        form,
+        `${API_BASE_URL}/api/events/create`,
+        {
+          ...form,
+          capacity: Number(form.capacity),
+          price: Number(form.price),
+        },
         { withCredentials: true }
       );
       toast.success('Event created successfully!');
@@ -49,7 +76,6 @@ const CreateEventPage = () => {
     }
   };
 
-  // Start time can't be before now
   const nowISO = new Date().toISOString().slice(0, 16);
 
   return (
@@ -106,6 +132,7 @@ const CreateEventPage = () => {
             name="price"
             type="number"
             min={0}
+            step="0.01"
             placeholder="Price (INR)"
             className="input input-bordered w-full"
             onChange={handleChange}

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 
 axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
@@ -8,11 +8,14 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
+  // Check auth status once on mount
   useEffect(() => {
     axios.get('/api/auth/me')
       .then(res => setUser(res.data.user))
-      .catch(() => setUser(null));
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
   }, []);
 
   const login = (user) => setUser(user);
@@ -26,8 +29,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const value = useMemo(() => ({ user, login, logout, loading }), [user, loading]);
+
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

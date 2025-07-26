@@ -1,3 +1,5 @@
+// utils/appError.js
+
 class AppError extends Error {
   constructor(message, statusCode) {
     super(message);
@@ -8,5 +10,7 @@ class AppError extends Error {
   }
 }
 
+// Factory function to create an AppError instance
 const appError = (message, statusCode) => new AppError(message, statusCode);
+
 module.exports = { AppError, appError };

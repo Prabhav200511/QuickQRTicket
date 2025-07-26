@@ -1,0 +1,14 @@
+{
+  "name": "quickticket-monorepo",
+  "private": true,
+  "scripts": {
+    "start:client": "cd client && npm run dev",
+    "build:client": "cd client && npm run build",
+    "start:server": "cd server && npm start",
+    "dev:server": "cd server && npm run dev",
+    "dev": "concurrently \"npm run dev:server\" \"npm run start:client\""
+  },
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  }
+}

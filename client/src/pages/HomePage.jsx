@@ -1,7 +1,7 @@
-import React from "react";
-import { TicketCheck, Users, CalendarPlus } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext"; // Make sure this path is correct
+import React from 'react';
+import { TicketCheck, Users, CalendarPlus } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const HomePage = () => {
   const { user } = useAuth();
@@ -15,23 +15,37 @@ const HomePage = () => {
             QuickTicket
           </h1>
           <p className="text-xl md:text-2xl text-base-content opacity-90 font-medium mb-8 max-w-2xl mx-auto">
-            The new standard for seamless ticketing.<br />
-            Host events, sell tickets, and enjoy instant QR entry in a modern, secure, and beautiful experience—built for both organizers and attendees.
+            The new standard for seamless ticketing.
+            <br />
+            Host events, sell tickets, and enjoy instant QR entry in a modern,
+            secure, and beautiful experience—built for both organizers and attendees.
           </p>
           <div className="flex flex-col md:flex-row gap-4 justify-center mb-6">
             {/* Only non-hosts see events link */}
-            {(!user || user.role === "customer") && (
-              <Link to="/events" className="btn btn-primary btn-lg rounded-full shadow-md">
+            {(!user || user.role === 'customer') && (
+              <Link
+                to="/events"
+                className="btn btn-primary btn-lg rounded-full shadow-md"
+                aria-label="Discover Events"
+              >
                 Discover Events
               </Link>
             )}
             {/* Only hosts see dashboard link */}
-            {user && user.role === "host" && (
-              <Link to="/dashboard/host" className="btn btn-primary btn-lg rounded-full shadow-md">
+            {user && user.role === 'host' && (
+              <Link
+                to="/dashboard/host"
+                className="btn btn-primary btn-lg rounded-full shadow-md"
+                aria-label="Go to Dashboard"
+              >
                 Go to Dashboard
               </Link>
             )}
-            <Link to="/signup" className="btn btn-accent btn-lg rounded-full shadow-md">
+            <Link
+              to="/signup"
+              className="btn btn-accent btn-lg rounded-full shadow-md"
+              aria-label="Get Started"
+            >
               Get Started
             </Link>
           </div>
@@ -79,18 +93,30 @@ const HomePage = () => {
             <li>Adapts seamlessly to light & dark mode for a comfortable experience</li>
           </ul>
           <div className="mt-8">
-            <Link to="/signup" className="btn btn-primary btn-lg rounded-full shadow-lg mr-3">
+            <Link
+              to="/signup"
+              className="btn btn-primary btn-lg rounded-full shadow-lg mr-3"
+              aria-label="Join QuickTicket"
+            >
               Join QuickTicket
             </Link>
             {/* Same: Only show events link to customer/guest */}
-            {(!user || user.role === "customer") && (
-              <Link to="/events" className="btn btn-outline btn-lg rounded-full">
+            {(!user || user.role === 'customer') && (
+              <Link
+                to="/events"
+                className="btn btn-outline btn-lg rounded-full"
+                aria-label="Discover Events"
+              >
                 Discover Events
               </Link>
             )}
             {/* Host sees dashboard button */}
-            {user && user.role === "host" && (
-              <Link to="/dashboard/host" className="btn btn-outline btn-lg rounded-full">
+            {user && user.role === 'host' && (
+              <Link
+                to="/dashboard/host"
+                className="btn btn-outline btn-lg rounded-full"
+                aria-label="Go to Dashboard"
+              >
                 Go to Dashboard
               </Link>
             )}

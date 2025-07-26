@@ -1,8 +1,16 @@
+// middleware/protectRoute.js
+
 const jwt = require('jsonwebtoken');
 const appError = require('../utils/appError');
 
 const protectRoute = (req, res, next) => {
-  const token = req.cookies.token;
+  // Assuming cookie-parser middleware is installed and used in your app
+  const token =
+    req.cookies.token ||
+    (req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+      ? req.headers.authorization.split(' ')[1]
+      : null);
 
   if (!token) {
     return next(appError('Not authenticated. Please login.', 401));
@@ -10,9 +18,10 @@ const protectRoute = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // contains id and role
+    req.user = decoded; 
     next();
   } catch (err) {
+    console.error('JWT verification error:', err);
     return next(appError('Invalid or expired token.', 401));
   }
 };

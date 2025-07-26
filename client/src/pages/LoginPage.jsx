@@ -5,6 +5,8 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { toast } from 'react-hot-toast';
 import AuthSidePanel from '../components/AuthSidePanel';
 
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || '';
+
 const LoginPage = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
@@ -22,7 +24,7 @@ const LoginPage = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post('/api/auth/login', formData, {
+      const res = await axios.post(`${API_BASE_URL}/api/auth/login`, formData, {
         withCredentials: true,
       });
       login(res.data.user);
@@ -42,7 +44,7 @@ const LoginPage = () => {
         <div className="w-full md:w-2/3 p-8 bg-base-100">
           <h2 className="text-2xl font-bold text-center mb-6">Login</h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" aria-busy={loading}>
             <input
               name="email"
               type="email"
@@ -51,6 +53,8 @@ const LoginPage = () => {
               value={formData.email}
               onChange={handleChange}
               required
+              disabled={loading}
+              aria-label="Email address"
             />
 
             <input
@@ -61,12 +65,15 @@ const LoginPage = () => {
               value={formData.password}
               onChange={handleChange}
               required
+              disabled={loading}
+              aria-label="Password"
             />
 
             <button
               type="submit"
               className="btn btn-primary w-full"
               disabled={loading}
+              aria-disabled={loading}
             >
               {loading ? 'Logging in...' : 'Login'}
             </button>
@@ -94,7 +101,7 @@ const LoginPage = () => {
           </div>
         </div>
 
-        {/* Right - Auth Panel */}
+        {/* Right - Auth Side Panel */}
         <AuthSidePanel />
       </div>
     </div>

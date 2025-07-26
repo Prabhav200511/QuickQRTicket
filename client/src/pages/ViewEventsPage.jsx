@@ -3,22 +3,33 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+
 const ViewEventsPage = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
+
+  const formatDateSafe = (dateStr) =>
+    dateStr && !isNaN(new Date(dateStr))
+      ? new Date(dateStr).toLocaleString()
+      : "TBA";
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/events/all");
+        const res = await axios.get(`${API_BASE_URL}/api/events/all`);
         setEvents(res.data.events);
+        setError(null);
       } catch (err) {
+        setError("Failed to load events");
         toast.error("Failed to load events");
       } finally {
         setLoading(false);
       }
     };
+
     fetchEvents();
   }, []);
 
@@ -26,16 +37,18 @@ const ViewEventsPage = () => {
     navigate(`/pay/${eventId}`);
   };
 
-  // Helper: is event started?
   const isStarted = (event) => new Date(event.time) <= new Date();
 
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-6 text-center">Available Events</h2>
+
       {loading ? (
         <div className="flex justify-center items-center h-48">
           <span className="loading loading-spinner loading-lg"></span>
         </div>
+      ) : error ? (
+        <p className="text-center text-red-600">{error}</p>
       ) : events.length === 0 ? (
         <p className="text-center text-gray-500">No events available.</p>
       ) : (
@@ -43,14 +56,17 @@ const ViewEventsPage = () => {
           {events.map((event) => {
             const started = isStarted(event);
             return (
-              <div key={event.id} className="bg-base-100 p-6 rounded shadow-md flex flex-col justify-between">
+              <div
+                key={event.id}
+                className="bg-base-100 p-6 rounded shadow-md flex flex-col justify-between"
+              >
                 <div>
                   <h3 className="text-xl font-semibold mb-2">{event.name}</h3>
                   <p className="text-sm text-gray-500 mb-1">
-                    Start: {new Date(event.time).toLocaleString()}
+                    Start: {formatDateSafe(event.time)}
                   </p>
                   <p className="text-sm text-gray-500 mb-1">
-                    End: {event.end_time ? new Date(event.end_time).toLocaleString() : "TBA"}
+                    End: {formatDateSafe(event.end_time)}
                   </p>
                   <p>Capacity: {event.capacity}</p>
                   <p>Tickets Left: {event.availabletickets || 0}</p>
@@ -61,10 +77,11 @@ const ViewEventsPage = () => {
                 </div>
                 <button
                   disabled={started || (event.availabletickets || 0) <= 0}
+                  aria-disabled={started || (event.availabletickets || 0) <= 0}
                   onClick={() => handleGoToPay(event.id)}
-                  className={`btn btn-primary btn-sm mt-4 w-full${
+                  className={`btn btn-primary btn-sm mt-4 w-full ${
                     started || (event.availabletickets || 0) <= 0
-                      ? " btn-disabled bg-gray-400 border-gray-400 cursor-not-allowed"
+                      ? "btn-disabled bg-gray-400 border-gray-400 cursor-not-allowed"
                       : ""
                   }`}
                 >

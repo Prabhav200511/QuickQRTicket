@@ -1,15 +1,16 @@
+// routes/authRoutes.js
+
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const pool = require('../db');
-const { createToken, verifyToken } = require('../utils/jwt');
-const { appError } = require('../utils/appError');
-const sendOTP = require('../utils/mailer');
-const { generateOtp, hashOtp, compareOtp } = require('../utils/otp');
+const { createToken, verifyToken } = require('../utils/jwt.js');
+const {appError }= require('../utils/appError.js');
+const sendOTP = require('../utils/mailer.js');
+const { generateOtp, hashOtp, compareOtp } = require('../utils/otp.js');
 
-
-
-router.get('/me', async (req, res) => {
+// GET /api/auth/me - Retrieve current user info based on auth token cookie
+router.get('/me', async (req, res, next) => {
   const token = req.cookies?.token;
   if (!token) return res.status(401).json({ user: null });
 
@@ -17,7 +18,10 @@ router.get('/me', async (req, res) => {
     const decoded = verifyToken(token);
     if (!decoded) return res.status(401).json({ user: null });
 
-    const result = await pool.query('SELECT id, name, email, role FROM users WHERE id = $1', [decoded.id]);
+    const result = await pool.query(
+      'SELECT id, name, email, role FROM users WHERE id = $1',
+      [decoded.id]
+    );
     const user = result.rows[0];
 
     if (!user) return res.status(404).json({ user: null });
@@ -29,7 +33,7 @@ router.get('/me', async (req, res) => {
   }
 });
 
-
+// POST /api/auth/signup - Register new user
 router.post('/signup', async (req, res, next) => {
   const { name, email, password, role } = req.body;
 
@@ -56,8 +60,8 @@ router.post('/signup', async (req, res, next) => {
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: false,
-      maxAge: 2 * 24 * 60 * 60 * 1000,
+      secure: process.env.NODE_ENV === 'production', // Use secure cookies in prod
+      maxAge: 2 * 24 * 60 * 60 * 1000, // 2 days
       sameSite: 'Lax',
     });
 
@@ -68,7 +72,7 @@ router.post('/signup', async (req, res, next) => {
   }
 });
 
-// LOGIN
+// POST /api/auth/login - Authenticate existing user
 router.post('/login', async (req, res, next) => {
   const { email, password } = req.body;
 
@@ -88,11 +92,12 @@ router.post('/login', async (req, res, next) => {
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === 'production',
       maxAge: 2 * 24 * 60 * 60 * 1000,
       sameSite: 'Lax',
     });
 
+    // Exclude password from returned user data
     const { password: _, ...safeUser } = user;
     res.json({ message: 'Login successful', user: safeUser });
   } catch (err) {
@@ -101,6 +106,7 @@ router.post('/login', async (req, res, next) => {
   }
 });
 
+// POST /api/auth/logout - Clear auth cookie
 router.post('/logout', (req, res) => {
   res.clearCookie('token', {
     httpOnly: true,
@@ -110,6 +116,7 @@ router.post('/logout', (req, res) => {
   res.json({ message: 'Logged out successfully!' });
 });
 
+// PUT /api/auth/update-profile - Update user's name
 router.put('/update-profile', async (req, res, next) => {
   const token = req.cookies.token;
   if (!token) return res.status(401).json({ message: 'Not authenticated' });
@@ -130,7 +137,7 @@ router.put('/update-profile', async (req, res, next) => {
 
     res.status(200).json({
       message: 'Profile updated successfully',
-      user: result.rows[0]
+      user: result.rows[0],
     });
   } catch (err) {
     console.error('Update profile error:', err);
@@ -138,6 +145,7 @@ router.put('/update-profile', async (req, res, next) => {
   }
 });
 
+// POST /api/auth/send-otp - Generate and email OTP for password reset/change
 router.post('/send-otp', async (req, res, next) => {
   const token = req.cookies?.token;
   if (!token) return res.status(401).json({ message: 'Not authenticated' });
@@ -152,7 +160,7 @@ router.post('/send-otp', async (req, res, next) => {
 
     const otp = generateOtp();          
     const hashedOtp = await hashOtp(otp);
-    const expires = new Date(Date.now() + 5 * 60 * 1000); 
+    const expires = new Date(Date.now() + 5 * 60 * 1000); // expires in 5 mins
 
     await pool.query(
       'UPDATE users SET otp_hash = $1, otp_expires = $2 WHERE email = $3',
@@ -168,7 +176,7 @@ router.post('/send-otp', async (req, res, next) => {
   }
 });
 
-
+// POST /api/auth/change-password - Change password using OTP
 router.post('/change-password', async (req, res, next) => {
   const token = req.cookies?.token;
   if (!token) return res.status(401).json({ message: 'Not authenticated' });
@@ -177,8 +185,7 @@ router.post('/change-password', async (req, res, next) => {
   if (!decoded) return res.status(401).json({ message: 'Invalid token' });
 
   const { otp, newPassword } = req.body;
-  if (!otp || !newPassword)
-    return next(appError('OTP and new password are required', 400));
+  if (!otp || !newPassword) return next(appError('OTP and new password are required', 400));
 
   try {
     const userResult = await pool.query(
@@ -210,6 +217,7 @@ router.post('/change-password', async (req, res, next) => {
   }
 });
 
+// DELETE /api/auth/delete-account - Delete user account
 router.delete('/delete-account', async (req, res, next) => {
   const token = req.cookies?.token;
   if (!token) return res.status(401).json({ message: 'Not authenticated' });
@@ -231,7 +239,5 @@ router.delete('/delete-account', async (req, res, next) => {
     next(appError('Failed to delete account.', 500));
   }
 });
-
-
 
 module.exports = router;

@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import ThemeToggle from '../components/ThemeToggle';
 
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || '';
+
 const SettingsPage = () => {
   const { user, login, logout } = useAuth();
   const [name, setName] = useState(user?.name || '');
@@ -26,7 +28,7 @@ const SettingsPage = () => {
 
     try {
       setLoading(true);
-      const res = await axios.put('/api/auth/update-profile', { name });
+      const res = await axios.put(`${API_BASE_URL}/api/auth/update-profile`, { name });
       login(res.data.user);
       toast.success('Profile name updated successfully.');
     } catch (err) {
@@ -48,7 +50,7 @@ const SettingsPage = () => {
                 toast.dismiss(t.id);
                 try {
                   setDeleteLoading(true);
-                  await axios.delete('/api/auth/delete-account');
+                  await axios.delete(`${API_BASE_URL}/api/auth/delete-account`);
                   logout();
                   toast.success('Account deleted.');
                   navigate('/signup');
@@ -96,6 +98,8 @@ const SettingsPage = () => {
             className="input input-bordered w-full"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            disabled={loading}
+            aria-label="Profile name"
           />
         </div>
 
@@ -104,14 +108,17 @@ const SettingsPage = () => {
           <input
             type="email"
             className="input input-bordered w-full bg-base-200 cursor-not-allowed"
-            value={user.email}
+            value={user?.email || ''}
             readOnly
+            aria-label="Email address"
           />
         </div>
 
         <button
           type="submit"
           className={`btn btn-primary w-full ${loading ? 'btn-disabled' : ''}`}
+          disabled={loading}
+          aria-busy={loading}
         >
           {loading ? 'Saving...' : 'Update Name'}
         </button>
@@ -127,6 +134,7 @@ const SettingsPage = () => {
         <button
           onClick={handleDeleteAccount}
           className={`btn btn-error btn-outline w-full ${deleteLoading ? 'btn-disabled' : ''}`}
+          disabled={deleteLoading}
         >
           {deleteLoading ? 'Deleting...' : 'Delete Account'}
         </button>
