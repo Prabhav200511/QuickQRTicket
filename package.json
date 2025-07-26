@@ -2,11 +2,8 @@
   "name": "quickticket-monorepo",
   "private": true,
   "scripts": {
-    "start:client": "cd client && npm run dev",
-    "build:client": "cd client && npm run build",
-    "start:server": "cd server && npm start",
-    "dev:server": "cd server && npm run dev",
-    "dev": "concurrently \"npm run dev:server\" \"npm run start:client\""
+    "build": "cd client && npm install && npm run build",
+    "start": "cd server && npm install && node index.js"
   },
   "devDependencies": {
     "concurrently": "^7.6.0"
