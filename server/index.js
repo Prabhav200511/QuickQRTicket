@@ -24,7 +24,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(clientBuildPath));
 
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRoutes); 
 app.use('/api/events', eventRoutes);
 app.use('/api/tickets', ticketRoutes);
 
@@ -33,12 +33,15 @@ app.get('/api', (req, res) => {
   res.status(200).json({ message: 'QuickTicket API is running!' });
 });
 
+app.get('/{*any}', (req, res) => {
+  res.sendFile(path.join(clientBuildPath, 'index.html'));
+});
+
 app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-app.get('*', (req, res) => {
-  res.sendFile(path.join(clientBuildPath, 'index.html'));
-});
+
+

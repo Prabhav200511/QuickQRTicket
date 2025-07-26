@@ -5,7 +5,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const pool = require('../db');
 const { createToken, verifyToken } = require('../utils/jwt.js');
-const {appError }= require('../utils/appError.js');
+const {appError}= require('../utils/appError.js');
 const sendOTP = require('../utils/mailer.js');
 const { generateOtp, hashOtp, compareOtp } = require('../utils/otp.js');
 
