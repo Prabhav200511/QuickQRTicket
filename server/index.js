@@ -14,11 +14,23 @@ const clientBuildPath = path.join(__dirname, '../client/dist');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors({
-  origin:'http://localhost:5173',
-  credentials: true,
-}));
+const allowedOrigins = [
+  'http://localhost:5173',               // for local development
+  'https://quickqrticket.onrender.com', // for deployed frontend
+];
 
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
