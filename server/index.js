@@ -14,19 +14,11 @@ const clientBuildPath = path.join(__dirname, '../client/dist');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const allowedOrigins = [
-  'http://localhost:5173',               // for local development
-  'https://quickqrticket.onrender.com', // for deployed frontend
-];
-
 const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: [
+    'http://localhost:5173',               // local dev frontend
+    'https://quickqrticket.onrender.com'   // deployed frontend
+  ],
   credentials: true,
 };
 
@@ -45,7 +37,7 @@ app.get('/api', (req, res) => {
   res.status(200).json({ message: 'QuickTicket API is running!' });
 });
 
-app.get('/{*any}', (req, res) => {
+app.get('/*', (req, res) => {
   res.sendFile(path.join(clientBuildPath, 'index.html'));
 });
 
