@@ -37,7 +37,7 @@ app.get('/api', (req, res) => {
   res.status(200).json({ message: 'QuickTicket API is running!' });
 });
 
-app.get('/*', (req, res) => {
+app.get('/{*any}', (req, res) => {
   res.sendFile(path.join(clientBuildPath, 'index.html'));
 });
 
