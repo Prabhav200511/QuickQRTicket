@@ -62,7 +62,7 @@ router.post('/signup', async (req, res, next) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // Use secure cookies in prod
       maxAge: 2 * 24 * 60 * 60 * 1000, // 2 days
-      sameSite: 'Lax',
+      sameSite: 'None',
     });
 
     res.status(201).json({ message: 'Signup successful', user });
@@ -94,7 +94,7 @@ router.post('/login', async (req, res, next) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       maxAge: 2 * 24 * 60 * 60 * 1000,
-      sameSite: 'Lax',
+      sameSite: 'None',
     });
 
     // Exclude password from returned user data
