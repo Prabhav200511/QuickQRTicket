@@ -13,7 +13,7 @@ const ChangePasswordViaOTP = () => {
   const handleSendOtp = async () => {
     try {
       setLoading(true);
-      await axios.post(`${API_BASE}/api/auth/send-otp`);
+      await axios.post(`${API_BASE_URL}/api/auth/send-otp`);
       setOtpSent(true);
       toast.success('OTP sent to your registered email.');
     } catch (err) {
@@ -43,7 +43,7 @@ const ChangePasswordViaOTP = () => {
 
     try {
       setLoading(true);
-      await axios.post(`${API_BASE}/api/auth/change-password`, { otp, newPassword });
+      await axios.post(`${API_BASE_URL}/api/auth/change-password`, { otp, newPassword });
       toast.success('Password changed successfully!');
       setOtp('');
       setNewPassword('');

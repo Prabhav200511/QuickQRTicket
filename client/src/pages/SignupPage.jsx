@@ -4,25 +4,30 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { toast } from 'react-hot-toast';
 import AuthSidePanel from '../components/AuthSidePanel';
+import useAuthRedirect from '../hooks/useAuthRedirect';
 
-  const API_BASE_URL = import.meta.env.NODE_ENV==="production"? '/' : 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.NODE_ENV === "production" ? '/' : 'http://localhost:5000';
 
 const SignupPage = () => {
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'customer' });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, user } = useAuth();
 
-  const handleChange = ({ target: { name, value } }) => setForm({ ...form, [name]: value });
+  useAuthRedirect(); // 👈 Redirect if already logged in
+
+  const handleChange = ({ target: { name, value } }) => setForm(prev => ({ ...prev, [name]: value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post(`${API_BASE_URL}/api/auth/signup`, form, { withCredentials: true });
+      const res = await axios.post(`${API_BASE_URL}/api/auth/signup`, form, {
+        withCredentials: true
+      });
       login(res.data.user);
       toast.success('Signup successful!');
-      navigate('/');
+      navigate('/'); // Automatically redirected from useAuthRedirect
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Signup failed');
     } finally {
@@ -82,7 +87,12 @@ const SignupPage = () => {
               <option value="customer">Customer</option>
               <option value="host">Host</option>
             </select>
-            <button type="submit" className="btn btn-primary w-full" disabled={loading} aria-disabled={loading}>
+            <button
+              type="submit"
+              className="btn btn-primary w-full"
+              disabled={loading}
+              aria-disabled={loading}
+            >
               {loading ? 'Signing up...' : 'Signup'}
             </button>
           </form>
