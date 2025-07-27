@@ -1,41 +1,32 @@
-import  { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
-axios.defaults.baseURL =  import.meta.env.NODE_ENV==="production"? '/' : 'http://localhost:5000';
-axios.defaults.withCredentials = true;
-
-const AuthContext = createContext();
+export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
 
-  // Check auth status once on mount
-  useEffect(() => {
-    axios.get('/api/auth/me')
-      .then(res => setUser(res.data.user))
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const login = (user) => setUser(user);
-
-  const logout = async () => {
+  const checkAuth = async () => {
     try {
-      await axios.post('/api/auth/logout');
-      setUser(null);
+      const res = await axios.get('/api/auth/me', { withCredentials: true });
+      setUser(res.data.user);
     } catch (err) {
-      console.error('Logout error:', err);
+      setUser(null);
     }
   };
 
-  const value = useMemo(() => ({ user, login, logout, loading }), [user, loading]);
+  useEffect(() => {
+    checkAuth(); // Check on initial load
+  }, []);
+
+  const logout = async () => {
+    await axios.post('/api/auth/logout', {}, { withCredentials: true });
+    setUser(null);
+  };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, setUser, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
-
-export const useAuth = () => useContext(AuthContext);
