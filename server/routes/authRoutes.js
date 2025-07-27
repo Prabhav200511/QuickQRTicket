@@ -10,7 +10,7 @@ const sendOTP = require('../utils/mailer.js');
 const { generateOtp, hashOtp, compareOtp } = require('../utils/otp.js');
 
 // GET /api/auth/me - Retrieve current user info based on auth token cookie
-router.get('/me', async (req, res, next) => {
+router.get('/me',{ withCredentials: true }, async (req, res, next) => {
   const token = req.cookies?.token;
   if (!token) return res.status(401).json({ user: null });
 
@@ -230,7 +230,7 @@ router.delete('/delete-account', async (req, res, next) => {
     res.clearCookie('token', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'Lax',
+      sameSite: 'None',
     });
 
     res.json({ message: 'Account deleted successfully' });
