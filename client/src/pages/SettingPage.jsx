@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import ThemeToggle from '../components/ThemeToggle';
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || '';
+  const API_BASE_URL = import.meta.env.NODE_ENV==="production"? '/' : 'http://localhost:5000';
 
 const SettingsPage = () => {
   const { user, login, logout } = useAuth();

@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { toast } from 'react-hot-toast';
 import AuthSidePanel from '../components/AuthSidePanel';
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || '';
+  const API_BASE_URL = import.meta.env.NODE_ENV==="production"? '/' : 'http://localhost:5000';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });

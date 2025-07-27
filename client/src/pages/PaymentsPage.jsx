@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+  const API_BASE_URL = import.meta.env.NODE_ENV==="production"? '/' : 'http://localhost:5000';
 
 const PaymentsPage = () => {
   const { eventId } = useParams();

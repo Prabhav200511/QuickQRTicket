@@ -7,7 +7,6 @@ const HostDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Optional: Loading or redirect if user not authenticated can be handled outside or here
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center py-16 px-6 bg-base-200">

@@ -14,7 +14,7 @@ const CreateEventPage = () => {
   });
 
   const navigate = useNavigate();
-  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const API_BASE_URL = import.meta.env.NODE_ENV==="production"? '/' : 'http://localhost:5000';
 
   const handleChange = (e) => {
     const { name, value } = e.target;
