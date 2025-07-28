@@ -62,7 +62,7 @@ router.post('/signup', async (req, res, next) => {
       httpOnly: true,
       secure: true , // Use secure cookies in prod  process.env.NODE_ENV === "production"
       maxAge: 2 * 24 * 60 * 60 * 1000, // 2 days
-      sameSite: 'Lax',
+      sameSite: 'None',
     });
 
     res.status(201).json({ message: 'Signup successful', user });
@@ -94,7 +94,7 @@ router.post('/login', async (req, res, next) => {
       httpOnly: true,
       secure: true,
       maxAge:  24 * 60 * 60 * 1000,
-      sameSite: 'Lax',
+      sameSite: 'None',
     });
 
     // Exclude password from returned user data
@@ -111,7 +111,7 @@ router.post('/logout', (req, res) => {
   res.clearCookie('token', {
     httpOnly: true,
     secure: true,
-    sameSite: 'Lax',
+    sameSite: 'None',
   });
   res.json({ message: 'Logged out successfully!' });
 });
@@ -230,7 +230,7 @@ router.delete('/delete-account', async (req, res, next) => {
     res.clearCookie('token', {
       httpOnly: true,
       secure: true,
-      sameSite: 'Lax',
+      sameSite: 'None',
     });
 
     res.json({ message: 'Account deleted successfully' });
