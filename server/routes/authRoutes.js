@@ -60,7 +60,7 @@ router.post('/signup', async (req, res, next) => {
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // Use secure cookies in prod
+      secure: true , // Use secure cookies in prod  process.env.NODE_ENV === "production"
       maxAge: 2 * 24 * 60 * 60 * 1000, // 2 days
       sameSite: 'Lax',
     });
@@ -92,7 +92,7 @@ router.post('/login', async (req, res, next) => {
 
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: true,
       maxAge:  24 * 60 * 60 * 1000,
       sameSite: 'Lax',
     });
@@ -110,7 +110,7 @@ router.post('/login', async (req, res, next) => {
 router.post('/logout', (req, res) => {
   res.clearCookie('token', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: true,
     sameSite: 'Lax',
   });
   res.json({ message: 'Logged out successfully!' });
@@ -229,7 +229,7 @@ router.delete('/delete-account', async (req, res, next) => {
     await pool.query('DELETE FROM users WHERE id = $1', [decoded.id]);
     res.clearCookie('token', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: true,
       sameSite: 'Lax',
     });
 
