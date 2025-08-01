@@ -5,7 +5,7 @@ QuickTicket is a full-stack event ticketing platform where Hosts can create even
 ## 🚀 Live Links
 
 - 🌐 Frontend: [https://quickticket.netlify.app](https://quickticket.netlify.app)
-- 🛠️ Backend: [https://quickticket-api.onrender.com](https://quickticket-api.onrender.com)
+- 🛠️ Backend: [https://quickticket-api.onrender.com]([https://quickticket-api.onrender.com](https://quickticket-1s9x.onrender.com))
 
 > ⚠️ **IMPORTANT:** If using the frontend, please **visit the backend URL once manually** to wake up the Render server.
 >
