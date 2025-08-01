@@ -6,22 +6,25 @@ const authRoutes = require('./routes/authRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const eventRoutes = require('./routes/eventRoutes');
 const ticketRoutes = require('./routes/ticketRoutes');
-const path = require('path');
+//const path = require('path');
 
 // __dirname = path.resolve();
 // const clientBuildPath = path.join(__dirname, '../client/dist');
 
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://quickticket.netlify.app',
+];  
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const corsOptions = {
-  origin: [
-    process.env.FRONTEND_URL
-  ],
-  credentials: true,
-};
-
-app.use(cors(corsOptions));
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
