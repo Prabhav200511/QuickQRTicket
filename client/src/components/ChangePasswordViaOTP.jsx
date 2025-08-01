@@ -8,7 +8,7 @@ const ChangePasswordViaOTP = () => {
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const API_BASE_URL =  '/';
+  const API_BASE_URL = process.env.VITE_API_BASE_URL;
 
   const handleSendOtp = async () => {
     try {

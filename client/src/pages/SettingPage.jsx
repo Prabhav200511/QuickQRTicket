@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import ThemeToggle from '../components/ThemeToggle';
 
-  const API_BASE_URL =  '/';
+  const API_BASE_URL = process.env.VITE_API_BASE_URL;
 
 const SettingsPage = () => {
   const { user, login, logout } = useAuth();

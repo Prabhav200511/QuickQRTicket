@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-  const API_BASE_URL =  '/';
+  const API_BASE_URL = process.env.VITE_API_BASE_URL;
 
 const Navbar = () => {
   const { user, logout } = useAuth();

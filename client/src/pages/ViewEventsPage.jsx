@@ -3,7 +3,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
-  const API_BASE_URL =  '/';
+  const API_BASE_URL = process.env.VITE_API_BASE_URL;
 
 const ViewEventsPage = () => {
   const [events, setEvents] = useState([]);

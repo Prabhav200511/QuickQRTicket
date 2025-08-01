@@ -14,7 +14,7 @@ const CreateEventPage = () => {
   });
 
   const navigate = useNavigate();
-  const API_BASE_URL =  '/';
+  const API_BASE_URL = process.env.VITE_API_BASE_URL;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
