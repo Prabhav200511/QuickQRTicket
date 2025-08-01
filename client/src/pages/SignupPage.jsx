@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import AuthSidePanel from '../components/AuthSidePanel';
 import useAuthRedirect from '../hooks/useAuthRedirect';
 
-const API_BASE_URL = import.meta.env.NODE_ENV === "production" ? '/' : 'http://localhost:5000';
+  const API_BASE_URL =  '/';
 
 const SignupPage = () => {
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'customer' });
