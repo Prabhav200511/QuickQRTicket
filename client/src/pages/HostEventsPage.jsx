@@ -18,7 +18,7 @@ const HostEventsPage = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/events/host`, { withCredentials: true });
+        const res = await axios.get(`/api/events/host`, { withCredentials: true });
         setEvents(res.data.events);
       } catch (err) {
         setError('Failed to load your events');

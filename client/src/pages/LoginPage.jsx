@@ -25,7 +25,7 @@ const LoginPage = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post(`${API_BASE_URL}/api/auth/login`, formData, {
+      const res = await axios.post(`/api/auth/login`, formData, {
         withCredentials: true,
       });
       login(res.data.user);

@@ -16,7 +16,7 @@ const PaymentsPage = () => {
   useEffect(() => {
     const fetchEvent = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/events/all`);
+        const res = await axios.get(`/api/events/all`);
         const ev = res.data.events?.find((e) => String(e.id) === String(eventId));
         setEvent(ev);
       } catch {
@@ -36,7 +36,7 @@ const PaymentsPage = () => {
     setPurchaseLoading(true);
     try {
       await axios.post(
-        `${API_BASE_URL}/api/tickets/buy`,
+        `/api/tickets/buy`,
         { eventId },
         { withCredentials: true }
       );

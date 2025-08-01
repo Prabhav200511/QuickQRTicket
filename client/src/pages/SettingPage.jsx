@@ -28,7 +28,7 @@ const SettingsPage = () => {
 
     try {
       setLoading(true);
-      const res = await axios.put(`${API_BASE_URL}/api/auth/update-profile`, { name });
+      const res = await axios.put(`/api/auth/update-profile`, { name });
       login(res.data.user);
       toast.success('Profile name updated successfully.');
     } catch (err) {

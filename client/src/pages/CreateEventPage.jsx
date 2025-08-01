@@ -61,7 +61,7 @@ const CreateEventPage = () => {
 
     try {
       await axios.post(
-        `${API_BASE_URL}/api/events/create`,
+        `/api/events/create`,
         {
           ...form,
           capacity: Number(form.capacity),

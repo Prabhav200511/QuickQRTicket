@@ -12,7 +12,7 @@ const MyTicketsPage = () => {
   useEffect(() => {
     const fetchTickets = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/tickets/my-tickets`, {
+        const res = await axios.get(`/api/tickets/my-tickets`, {
           withCredentials: true,
         });
         setTickets(res.data.tickets);

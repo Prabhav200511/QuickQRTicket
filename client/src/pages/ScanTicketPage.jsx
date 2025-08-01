@@ -34,7 +34,7 @@ const ScanTicketPage = () => {
       setScanning(true);
       try {
         const res = await axios.post(
-          `${API_BASE_URL}/api/tickets/scan-qrstring`,
+          `/api/tickets/scan-qrstring`,
           { qrText: qrData },
           { withCredentials: true }
         );

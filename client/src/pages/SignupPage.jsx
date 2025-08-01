@@ -22,7 +22,7 @@ const SignupPage = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post(`${API_BASE_URL}/api/auth/signup`, form, {
+      const res = await axios.post(`$/api/auth/signup`, form, {
         withCredentials: true
       });
       login(res.data.user);
